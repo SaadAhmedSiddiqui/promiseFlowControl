@@ -1,8 +1,8 @@
 Promise Flow Control
 =
+How to use (example use):
 
-Utilities
-var b = new window.util.Promise( function ( success, failure ) {
+        var b = new window.util.Promise( function ( success, failure ) {
         setTimeout( function () {
             success( "I found him", "g" );
         }, 100 );
@@ -11,7 +11,7 @@ var b = new window.util.Promise( function ( success, failure ) {
             failure( "bad1", "b" );
         }, 100 );
 
-    } ).successFlow( function ( succesReturn1, successReturn2 ) {
+        } ).successFlow( function ( succesReturn1, successReturn2 ) {
         if ( succesReturn1 == "I found him" ) {
             return ["addUser", "findMore"];
         } else if ( succesReturn1 == "I lost him" ) {
@@ -21,46 +21,46 @@ var b = new window.util.Promise( function ( success, failure ) {
         } else {
             return [];     //no exectution of roles
         }
-    } ).onError( function (error) {
+        } ).onError( function (error) {
         console.log( error );
-    } );
-
-b.role( "find from server", function ( succesReturn1, successReturn2 ) {
+        } );
+        
+        b.role( "find from server", function ( succesReturn1, successReturn2 ) {
         console.log("find from server");
-    } );
-
-    b.role( "authenticate", function ( succesReturn1, successReturn2 ) {
+        } );
+        
+        b.role( "authenticate", function ( succesReturn1, successReturn2 ) {
         console.log("authenticate")
-    } );
-
-    b.role( "addUser", function ( succesReturn1, successReturn2 ) {
+        } );
+        
+        b.role( "addUser", function ( succesReturn1, successReturn2 ) {
         console.log("addUser");
-    } );
-
-    b.role( "findMore", function ( succesReturn1, successReturn2 ) {
+        } );
+        
+        b.role( "findMore", function ( succesReturn1, successReturn2 ) {
         console.log("findMores");
-    } );
-
-
-    b.then( function ( str ) {
+        } );
+        
+        
+        b.then( function ( str ) {
         console.log( str );
         return "good2";
-    },
-    function ( str ) {
+        },
+        function ( str ) {
         console.log( str );
         return "bad2";
-    } ).then( function ( str ) {
+        } ).then( function ( str ) {
         console.log( str );
         return "good3";
-    },
-    function ( str ) {
+        },
+        function ( str ) {
         console.log( str );
         return "bad3";
-    } );
-
-    b.then( function ( str ) {
+        } );
+        
+        b.then( function ( str ) {
         console.log( str );
-    },
-    function ( str ) {
+        },
+        function ( str ) {
         console.log( str );
-    } );
+        } );
