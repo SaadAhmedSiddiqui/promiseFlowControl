@@ -4,6 +4,7 @@
 
     window.util = window.util || {};       //defining NameSpace
     window.util.Promise = Promise;
+    window.util.AsyncEvaluator = AsyncEvaluator;
 
     // ---- context is the context will found in every then ----
     function Promise( worker, context ) {
@@ -88,74 +89,108 @@
         this._errorHandler = errorHandler;
         return this;
     }
+
     // ************************************************* \\
-    
+
+
+    function AsyncEvaluator() {
+
+        var blob = new Blob( ['onmessage = function (oEvent) { postMessage({ "id": oEvent.data.id, "evaluated": eval(oEvent.data.code) }); }'], {type: 'text/javascript'} );
+
+        // Obtain a blob URL reference to our worker 'file'.
+        var blobURL = window.URL.createObjectURL( blob );
+
+        var aListeners = {}, idCount = 0, oParser = new Worker( blobURL );
+
+        oParser.onmessage = function ( oEvent ) {
+            if ( aListeners[oEvent.data.id] ) { aListeners[oEvent.data.id]( oEvent.data.evaluated ); }
+            delete aListeners[oEvent.data.id];
+        };
+
+        return function asyncEval( sCode, fListener ) {
+            aListeners[++idCount] = fListener;
+            oParser.postMessage( {
+                "id": idCount,
+                "code": sCode
+            } );
+        };
+
+    }
     
 
 } )();
 
 ( function testing() {
-    var b = new window.util.Promise( function ( success, failure ) {
-        setTimeout( function () {
-            success( "I found him", "g" );
-        }, 100 );
 
-        setTimeout( function () {
-            failure( "bad1", "b" );
-        }, 100 );
-
-    } ).successFlow( function ( succesReturn1, successReturn2 ) {
-        if ( succesReturn1 == "I found him" ) {
-            return ["addUser", "findMore"];
-        } else if ( succesReturn1 == "I lost him" ) {
-            return ["find from server", "authenticate", "addUser"];
-        } else if ( succesReturn1 == "find many" ) {
-            return ["find from server", "authenticate", "findMore", "addUser"];
-        } else {
-            return [];     //no exectution of roles
-        }
-    } ).onError( function (error) {
-        console.log( error );
+    var asyncEval = util.AsyncEvaluator();
+    asyncEval( "2+3", function ( e ) {
+        console.log( e )
     } );
-
-    b.role( "find from server", function ( succesReturn1, successReturn2 ) {
-        console.log("find from server");
+    asyncEval( "2+7", function ( e ) {
+        console.log( e )
     } );
+    asyncEval( "18-5" );
 
-    b.role( "authenticate", function ( succesReturn1, successReturn2 ) {
-        console.log("authenticate")
-    } );
+    //var b = new window.util.Promise( function ( success, failure ) {
+    //    setTimeout( function () {
+    //        success( "I found him", "g" );
+    //    }, 100 );
 
-    b.role( "addUser", function ( succesReturn1, successReturn2 ) {
-        console.log("addUser");
-    } );
+    //    setTimeout( function () {
+    //        failure( "bad1", "b" );
+    //    }, 100 );
 
-    b.role( "findMore", function ( succesReturn1, successReturn2 ) {
-        console.log("findMores");
-    } );
+    //} ).successFlow( function ( succesReturn1, successReturn2 ) {
+    //    if ( succesReturn1 == "I found him" ) {
+    //        return ["addUser", "findMore"];
+    //    } else if ( succesReturn1 == "I lost him" ) {
+    //        return ["find from server", "authenticate", "addUser"];
+    //    } else if ( succesReturn1 == "find many" ) {
+    //        return ["find from server", "authenticate", "findMore", "addUser"];
+    //    } else {
+    //        return [];     //no exectution of roles
+    //    }
+    //} ).onError( function (error) {
+    //    console.log( error );
+    //} );
 
+    //b.role( "find from server", function ( succesReturn1, successReturn2 ) {
+    //    console.log("find from server");
+    //} );
 
-    b.then( function ( str ) {
-        console.log( str );
-        return "good2";
-    },
-    function ( str ) {
-        console.log( str );
-        return "bad2";
-    } ).then( function ( str ) {
-        console.log( str );
-        return "good3";
-    },
-    function ( str ) {
-        console.log( str );
-        return "bad3";
-    } );
+    //b.role( "authenticate", function ( succesReturn1, successReturn2 ) {
+    //    console.log("authenticate")
+    //} );
 
-    b.then( function ( str ) {
-        console.log( str );
-    },
-    function ( str ) {
-        console.log( str );
-    } );
+    //b.role( "addUser", function ( succesReturn1, successReturn2 ) {
+    //    console.log("addUser");
+    //} );
+
+    //b.role( "findMore", function ( succesReturn1, successReturn2 ) {
+    //    console.log("findMores");
+    //} );
+
+    //b.then( function ( str ) {
+    //    console.log( str );
+    //    return "good2";
+    //},
+    //function ( str ) {
+    //    console.log( str );
+    //    return "bad2";
+    //} ).then( function ( str ) {
+    //    console.log( str );
+    //    return "good3";
+    //},
+    //function ( str ) {
+    //    console.log( str );
+    //    return "bad3";
+    //} );
+
+    //b.then( function ( str ) {
+    //    console.log( str );
+    //},
+    //function ( str ) {
+    //    console.log( str );
+    //} );
 
 } )();
