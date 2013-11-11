@@ -12,7 +12,7 @@
         this._context = context;
         this._thens = [];
 
-        function success( ) {
+        function success() {
             var args = arguments, flow;
 
             if ( that._successFlow ) {
@@ -26,12 +26,12 @@
                 }
             }
 
-            for (var i = 0; i < that._thens.length; i++) {
+            for ( var i = 0; i < that._thens.length; i++ ) {
                 args = [that._thens[i].success.apply( context, args )];
                 that._thens.splice( i--, 1 );
             }
         }
-        function failure( ) {
+        function failure() {
             var args = arguments, flow;
 
             if ( that._failureFlow ) {
@@ -95,28 +95,60 @@
 
     function AsyncEvaluator() {
 
-        var blob = new Blob( ['onmessage = function (oEvent) { postMessage({ "id": oEvent.data.id, "evaluated": eval(oEvent.data.code) }); }'], {type: 'text/javascript'} );
+        var blob = new Blob( ['onmessage = function (oEvent) { try { var a = eval(oEvent.data.code); } catch(e){ postMessage({ "id": oEvent.data.id, "return": undefined, "error": "Error: " + e.message, fn:6 }); } postMessage({ "id": oEvent.data.id, "return": a }); }'], { type: 'text/javascript' } );
+        var blobURL = window.URL.createObjectURL( blob );
 
-        // Obtain a blob URL reference to our worker 'file'.
+        var aListeners = {}, idCount = 0, oParser = new Worker( blobURL );
+
+        try {
+            oParser.onmessage = function ( oEvent ) {
+
+                if ( oEvent.data.error && aListeners[oEvent.data.id + "onerror"] ) { aListeners[oEvent.data.id + "onerror"]( oEvent.data.error ); }
+                else if ( aListeners[oEvent.data.id] ) { aListeners[oEvent.data.id]( oEvent.data.return ); }
+                delete aListeners[oEvent.data.id];
+            };
+
+            window.oParser = oParser;
+            return function asyncEval( sCode, fListener, onError ) {
+                aListeners[++idCount] = fListener;
+                aListeners[idCount + "onerror"] = onError;
+                oParser.postMessage( {
+                    "id": idCount,
+                    "code": sCode
+                } );
+
+            };
+
+        } catch ( e ) { console.log( e ); }
+    }
+
+    function AsyncCaller() {
+
+        var blob = new Blob( ['onmessage = function (oEvent) { try { var a = eval(oEvent.data.code); } catch(e){ postMessage({ "id": oEvent.data.id, "return": undefined, "error": "Error: " + e.message, fn:6 }); } postMessage({ "id": oEvent.data.id, "return": a }); }'], { type: 'text/javascript' } );
         var blobURL = window.URL.createObjectURL( blob );
 
         var aListeners = {}, idCount = 0, oParser = new Worker( blobURL );
 
         oParser.onmessage = function ( oEvent ) {
-            if ( aListeners[oEvent.data.id] ) { aListeners[oEvent.data.id]( oEvent.data.evaluated ); }
+
+            if ( oEvent.data.error && aListeners[oEvent.data.id + "onerror"] ) { aListeners[oEvent.data.id + "onerror"]( oEvent.data.error ); }
+            else if ( aListeners[oEvent.data.id] ) { aListeners[oEvent.data.id]( oEvent.data.return ); }
             delete aListeners[oEvent.data.id];
         };
 
-        return function asyncEval( sCode, fListener ) {
+        window.oParser = oParser;        
+
+        return function asyncEval( sCode, fListener, onError ) {
             aListeners[++idCount] = fListener;
+            aListeners[idCount + "onerror"] = onError;
             oParser.postMessage( {
                 "id": idCount,
                 "code": sCode
             } );
+            return oParser;
         };
-
     }
-    
+
 
 } )();
 
