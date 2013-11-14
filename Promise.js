@@ -5,6 +5,7 @@
     window.util = window.util || {};       //defining NameSpace
     window.util.Promise = Promise;
     window.util.AsyncEvaluator = AsyncEvaluator;
+    window.util.AsyncCaller = AsyncCaller;
 
     // ---- context is the context will found in every then ----
     function Promise( worker, context ) {
@@ -124,7 +125,7 @@
 
     function AsyncCaller() {
 
-        var blob = new Blob( ['onmessage = function (oEvent) { try { var a = eval(oEvent.data.code); } catch(e){ postMessage({ "id": oEvent.data.id, "return": undefined, "error": "Error: " + e.message, fn:6 }); } postMessage({ "id": oEvent.data.id, "return": a }); }'], { type: 'text/javascript' } );
+        var blob = new Blob( ['onmessage = function ( oEvent ) { try { eval( "var a = " + oEvent.data.worker ); var b = a.apply( oEvent.data.context, oEvent.data.args ); } catch ( e ) { postMessage( { "id": oEvent.data.id, "return": undefined, "error": "Error: " + e.message } ); } postMessage( { "id": oEvent.data.id, "return": b } ); }'], { type: 'text/javascript' } );
         var blobURL = window.URL.createObjectURL( blob );
 
         var aListeners = {}, idCount = 0, oParser = new Worker( blobURL );
@@ -138,12 +139,14 @@
 
         window.oParser = oParser;        
 
-        return function asyncEval( sCode, fListener, onError ) {
+        return function asyncWork( context, args, worker, fListener, onError ) {
             aListeners[++idCount] = fListener;
             aListeners[idCount + "onerror"] = onError;
             oParser.postMessage( {
                 "id": idCount,
-                "code": sCode
+                "args": args,
+                "context": context,
+                "worker": worker.toString()
             } );
             return oParser;
         };
@@ -151,6 +154,15 @@
 
 
 } )();
+//onmessage = function ( oEvent ) {    try {
+//        var a = eval( oEvent.data.worker );
+//        var b = a.apply( null, oEvent.data.args );
+//    }
+//    catch ( e ) {
+//        postMessage( { "id": oEvent.data.id, "return": undefined, "error": "Error: " + e.message } );
+//    }
+//    postMessage( { "id": oEvent.data.id, "return": b } );
+//}
 
 ( function testing() {
 
