@@ -66,3 +66,29 @@ after calling all the roles its then will be called accordingly, like:
         function ( str ) {
         	console.log( str );
         } );
+
+Asynchronous Function Worker
+=
+worker which executes your given function with the given context and given arguments
+
+	var worker = util.AsyncCaller();
+	worker( context, arguments, function, successCallback, errorCallback );
+	
+arguments and context cannot contain function, because functions does not carry
+sample use:
+
+	var worker = util.AsyncCaller();
+	var arr = [2,5,-13];
+	var doSum = function(arr, mult){
+		for(var i = 0; i< arr.length; i++){
+			this.sum = += arr[i];
+		}
+		return this.sum * mult;
+	}
+	var callback = function(result){
+		console.log(result);		//-60
+	}
+	errorCallback = function(e){
+		console.log(e);
+	}
+	worker( {sum:0}, [arr, 10], doSum, callback, errorCallback );
