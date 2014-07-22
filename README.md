@@ -92,3 +92,34 @@ sample use:
 		console.log(e);
 	}
 	worker( {sum:0}, [arr, 10], doSum, callback, errorCallback );
+	
+Sequence Flow
+=
+
+    util.sequence(function(callback){
+
+        setTimeout(function(){
+            callback(null,"success");
+
+        }, 100);
+    },
+    function(callback){
+
+        callback(null,"success2");
+    },
+    function(callback){
+        setTimeout(function(){
+
+        	callback(null,{g:5});
+        },700);
+        
+    }).then(function(data1, data2, data3){
+        return
+    }, function(err){
+        return;
+    }).then(function(data1, data2, data3){
+        return;
+    }, function(err){
+        return;
+    });
+    
