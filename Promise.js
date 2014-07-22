@@ -3,9 +3,48 @@
     "use strict";
 
     window.util = window.util || {};       //defining NameSpace
+    window.util.sequence = sequence;
     window.util.Promise = Promise;
     window.util.AsyncEvaluator = AsyncEvaluator;
     window.util.AsyncCaller = AsyncCaller;
+
+    function sequence(){
+        var successes = [];
+        var failures = [];
+        var successArgs = [];
+        var methods = [].slice.call(arguments);
+        var index = 0;
+
+        call();
+
+        function call(){
+            methods[index++](function(err, data){
+                successArgs.push(data);
+                if(err){
+                    successArgs.length = methods.length;
+                    failures.forEach(function(fail){
+                        fail(err);
+                    });
+                } else if(successArgs.length >= methods.length){
+                    successes.forEach(function(success){
+                        success.apply(null, successArgs);
+                    });
+
+                } else{
+                    call();
+                }
+
+            });
+        }
+        return {
+            then: function(success, failure){
+                success && successes.push(success);
+                failure && failures.push(failure);
+
+                return this;
+            }
+        }
+    }
 
     // ---- context is the context will found in every then ----
     function Promise( worker, context ) {
